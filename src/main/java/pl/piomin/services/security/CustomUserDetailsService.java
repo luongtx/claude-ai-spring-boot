@@ -1,28 +1,31 @@
 package pl.piomin.services.security;
 
-import org.springframework.security.core.userdetails.User;
+import pl.piomin.services.model.User;
+import pl.piomin.services.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Collections;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // For demo purposes, we're using a hardcoded user
-        // In a real application, you would load the user from a database
-        if ("user".equals(username)) {
-            return new User("user", "$2a$10$slYQmyNdGzHFp33eD.2VBO0WSjWgSqUtRVTgqZvXpMRQrqvUN/ZPq", // password: password
-                    new ArrayList<>());
-        } else if ("admin".equals(username)) {
-            return new User("admin", "$2a$10$slYQmyNdGzHFp33eD.2VBO0WSjWgSqUtRVTgqZvXpMRQrqvUN/ZPq", // password: password
-                    new ArrayList<>());
-        } else {
-            throw new UsernameNotFoundException("User not found with username: " + username);
-        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(),
+                user.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority(user.getRole()))
+        );
     }
 }
